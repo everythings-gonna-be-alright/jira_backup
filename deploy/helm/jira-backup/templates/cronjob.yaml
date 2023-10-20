@@ -1,0 +1,175 @@
+{{- if .Values.settings.jiraBackup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "jira-backup.fullname" . }}-jira
+  labels:
+    {{- include "jira-backup.labels" . | nindent 4 }}
+spec:
+  {{- $schedule := .Values.settings.jiraBackup.schedule }}
+  schedule: {{ $schedule | quote }}
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  suspend: false
+  concurrencyPolicy: "Forbid"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1800
+      backoffLimit: 1
+      template:
+        spec:
+        {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 10 }}
+        {{- end }}
+          dnsPolicy: ClusterFirst
+          containers:
+          - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            name: {{ include "jira-backup.fullname" . }}
+            imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+            resources:
+            {{- $resources := .Values.resources }}
+            {{- if .resources }}
+              {{- $resources = .resources }}
+            {{- end }}
+              {{- toYaml $resources | nindent 14 }}
+            command: ["/bin/sh"]
+            {{- $onlyupload := "" }}
+            {{- if .Values.settings.jiraBackup.onlyUploadLatest }}
+              {{- $onlyupload = .Values.settings.jiraBackup.onlyUploadLatest }}
+            {{- end}}
+            args: ["-c", "./jira_backup.py {{ $onlyupload }}"]
+            env:
+              - name: PYTHONUNBUFFERED
+                value: "1"
+              - name: SITE
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: site
+              - name: USER
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: user
+              - name: TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: token
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: aws_access_key_id
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: aws_secret_access_key
+              - name: BUCKET_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: bucket_name
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 11 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 11 }}
+          {{- end }}
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 30
+{{- end }}
+---
+{{- if .Values.settings.confluenceBackup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "jira-backup.fullname" . }}-confluence
+  labels:
+    {{- include "jira-backup.labels" . | nindent 4 }}
+spec:
+  {{- $schedule := .Values.settings.jiraBackup.schedule }}
+  schedule: {{ $schedule | quote }}
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  suspend: false
+  concurrencyPolicy: "Forbid"
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 1800
+      backoffLimit: 3
+      template:
+        spec:
+        {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 10 }}
+        {{- end }}
+          dnsPolicy: ClusterFirst
+          containers:
+          - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+            name: {{ include "jira-backup.fullname" . }}
+            imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+            resources:
+            {{- $resources := .Values.resources }}
+            {{- if .resources }}
+              {{- $resources = .resources }}
+            {{- end }}
+              {{- toYaml $resources | nindent 14 }}
+            command: ["/bin/sh"]
+            {{- $onlyupload := "" }}
+            {{- if .Values.settings.confluenceBackup.onlyUploadLatest }}
+              {{- $onlyupload = "-ou Y" }}
+            {{- end}}
+            {{- $attachments := "-a N" }}
+            {{- if .Values.settings.confluenceBackup.attachments }}
+              {{- $attachments = "-a Y" }}
+            {{- end}}
+            args: ["-c", "./confluence_backup.py {{ $onlyupload }} {{ $attachments }}"]
+            env:
+              - name: PYTHONUNBUFFERED
+                value: "1"
+              - name: SITE
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: site
+              - name: USER
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: user
+              - name: TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: token
+              - name: AWS_ACCESS_KEY_ID
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: aws_access_key_id
+              - name: AWS_SECRET_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: aws_secret_access_key
+              - name: BUCKET_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: {{ template "jira-backup.fullname" . }}
+                    key: bucket_name
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 11 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 11 }}
+          {{- end }}
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 30
+{{- end }}

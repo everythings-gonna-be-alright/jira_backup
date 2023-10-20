@@ -1,0 +1,74 @@
+# Default values for jira-backup.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: hiload/jira-backup
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+settings:
+  # Confluence site
+  site:
+  # Confluence user
+  user:
+  # Confluence token
+  token:
+  s3:
+    AWSAccessKeyID:
+    AWSSecretAccessKey:
+    bucketName:
+  jiraBackup:
+    enabled: true
+    schedule: "0 12 * * 0"
+    onlyUploadLatest: false
+  confluenceBackup:
+    enabled: true
+    schedule: "0 12 / * 0"
+    attachments: true
+    onlyUploadLatest: false
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
