@@ -1,14 +1,14 @@
-## Automatic Jira Cloud Backup to s3
+## Automatic Jira Cloud Backup to S3
 [![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://vshymanskyy.github.io/StandWithUkraine/)
 
-Script for backup Jira and Confluence to s3
+Script for backup Jira and Confluence to S3
 
 Based on https://bitbucket.org/atlassianlabs/automatic-cloud-backup/src/master/
 
 I just added:
 * S3 multipart upload instead local store
-* ENV support
-* Helm chart
+* OS ENVs support
+* Helm chart for Kubernetes
 
 Enjoy 🙂
 
@@ -16,7 +16,7 @@ Enjoy 🙂
 
 ### Helm Install:
 
-`helm install <my-release> oci://registry-1.docker.io/hiload/jira-backup --version 0.1.0 -f values.yaml -f secrets://secret.yaml`
+`helm install <my-release> oci://registry-1.docker.io/hiload/jira-backup --version 0.1.0 -f values.yaml`
 
 
 ### Docker:
@@ -29,7 +29,9 @@ Enjoy 🙂
 
 `docker build . -t your_tag`
 
-Configuration arguments:
+## Configuration arguments:
+
+For all scripts:
 
 | Short | Long                    | env                   | Description                                               |
 |-------|-------------------------|-----------------------|-----------------------------------------------------------|
@@ -39,7 +41,13 @@ Configuration arguments:
 | -b    | --bucket_name           | BUCKET_NAME           | S3 bucket name                                            |
 | -ak   | --aws_access_key_id     | AWS_ACCESS_KEY_ID     | AWS secret access key for s3                              |                                                                                                                                                                |
 | -sk   | --aws_secret_access_key | AWS_SECRET_ACCESS_KEY | AWS access key id for s3                                  |
-| -ou   | --only_upload_latest    | ONLY_UPLOAD_LATEST    | Just upload latest backup to s3                           |
+| -ou   | --only_upload_latest    | ONLY_UPLOAD_LATEST    | [Y/y] to just re-upload latest backup to s3               |
+
+For confluence_backup.py:
+
+| Short | Long                    | env         | Description                                                           |
+|-------|-------------------------|-------------|-----------------------------------------------------------------------|
+| -a    | --attachments           | ATTACHMENTS | [Y/y] to download with attachments or [N/n] to download without       |
 
 ### License
 Copyright (c) 2015 Atlassian US., Inc.\

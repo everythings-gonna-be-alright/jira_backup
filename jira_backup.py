@@ -148,7 +148,7 @@ def main():
     parser.add_argument('-b', '--bucket_name', help='S3 bucket name')
     parser.add_argument('-ak', '--aws_access_key_id', help='AWS access key id for s3')
     parser.add_argument('-sk', '--aws_secret_access_key', help='AWS secret access key for s3')
-    parser.add_argument('-ou', '--only_upload_latest', help='Just upload latest backup to s3')
+    parser.add_argument('-ou', '--only_upload_latest', help='[Y/y] to just re-upload latest backup to s3')
 
     args = parser.parse_args()
     site = find_in_envs(args,"site")
