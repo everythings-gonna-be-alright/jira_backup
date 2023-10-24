@@ -29,7 +29,7 @@ settings:
     onlyUploadLatest: false
   confluenceBackup:
     enabled: true
-    schedule: "0 12 / * 0"
+    schedule: "0 12 * * 0"
     attachments: true
     onlyUploadLatest: false
 
