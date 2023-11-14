@@ -13,15 +13,15 @@ import time
 import re
 import argparse
 import boto3
+from botocore.exceptions import ConnectTimeoutError
 import os
 
-def conf_backup(account, username, token, attachments, only_upload_latest):
 
+def conf_backup(account, username, token, attachments, only_upload_latest):
     # global variables
     global backup_response
     global json
     global file_name
-
 
     # Set json data to determine if backup to include attachments.
     if attachments in ('Y', 'y'):
@@ -85,7 +85,7 @@ def conf_backup(account, username, token, attachments, only_upload_latest):
             # Regex for alternative percentage value.
             alt_percentage_value = str(
                 re.search('(?<=alternativePercentage\":\")(.*?)(?=\")', progress_req.text).group(1))
-            print('Action: '+ current_status + ' / Overall progress: ' + alt_percentage_value)
+            print('Action: ' + current_status + ' / Overall progress: ' + alt_percentage_value)
             time.sleep(10)
         # Catch any instance of the of word 'error' in the response and exit script.
         elif error.casefold() in progress_req.text:
@@ -104,9 +104,12 @@ def conf_backup(account, username, token, attachments, only_upload_latest):
         url = url + '/download/' + file_name
         return filename, url, session
 
+
 def upload_to_s3(aws_access_key_id, aws_secret_access_key, bucket_name, s3_object_key, download_url, session):
     # Initialize the S3 client
-    s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+    timeout_seconds = 30
+    s3 = boto3.client('s3', config=boto3.session.Config(connect_timeout=timeout_seconds, read_timeout=timeout_seconds),
+                      aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
 
     # Create an S3 object to write chunks to
     s3_object = s3.create_multipart_upload(Bucket=bucket_name, Key=s3_object_key)
@@ -146,12 +149,15 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, bucket_name, s3_objec
 
         print(f'Successfully uploaded {s3_object_key} to S3.')
 
+    except ConnectTimeoutError as e:
+        print(f"Connection timed out after {timeout_seconds} seconds. Error:", e)
     except Exception as e:
         print(f"An error occurred: {e}")
 
     finally:
         # Clean up in case of an error
         s3.abort_multipart_upload(Bucket=bucket_name, Key=s3_object_key, UploadId=upload_id)
+
 
 def find_in_envs(args, key):
     if os.environ.get(key.upper()):
@@ -160,8 +166,8 @@ def find_in_envs(args, key):
         value = args.__dict__[key]
     return value
 
-def main():
 
+def main():
     parser = argparse.ArgumentParser('jira backup')
     parser.add_argument('-s', '--site', help='Your site/account name <account>.atlassian.net')
     parser.add_argument('-u', '--user', help='Your email address for the jira account with admin rights')
@@ -173,22 +179,23 @@ def main():
     parser.add_argument('-ou', '--only_upload_latest', help='[Y/y] to just re-upload latest backup to s3')
 
     args = parser.parse_args()
-    site = find_in_envs(args,"site")
+    site = find_in_envs(args, "site")
     user_name = find_in_envs(args, "user")
     api_token = find_in_envs(args, "token")
     only_upload_latest = find_in_envs(args, "only_upload_latest")
     if not api_token:
-       print("API token for the user account is not set")
-       exit(1)
+        print("API token for the user account is not set")
+        exit(1)
     attachments = find_in_envs(args, "attachments")
     # AWS credentials and S3 bucket information
     aws_access_key_id = find_in_envs(args, "aws_access_key_id")
     aws_secret_access_key = find_in_envs(args, "aws_secret_access_key")
     bucket_name = find_in_envs(args, "bucket_name")
 
-
     filename, url, session = conf_backup(site, user_name, api_token, attachments, only_upload_latest)
-    upload_to_s3(aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key, bucket_name=bucket_name, s3_object_key=filename, download_url=url, session=session)
+    upload_to_s3(aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key,
+                 bucket_name=bucket_name, s3_object_key=filename, download_url=url, session=session)
+
 
 if __name__ == '__main__':
     main()
