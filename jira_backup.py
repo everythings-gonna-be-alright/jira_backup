@@ -63,7 +63,7 @@ def jira_backup(account, username, token, json, only_upload_latest):
             exit(1)
 
         if (last_progress != task_progress) and 'error' not in progress_req.text:
-            print("Progress: " + task_progress + "%")
+            print("Progress: " + str(task_progress) + "%")
             last_progress = task_progress
         elif 'error' in progress_req.text:
             print(progress_req.text)
