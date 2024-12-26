@@ -114,7 +114,7 @@ def upload_to_s3(aws_access_key_id, aws_secret_access_key, bucket_name, s3_objec
     # Create an S3 object to write chunks to
     s3_object = s3.create_multipart_upload(Bucket=bucket_name, Key=s3_object_key)
 
-    print('Start upload to s3 bucket' + bucket_name + "/" + s3_object_key)
+    print('Start upload to s3 bucket ' + bucket_name + "/" + s3_object_key)
 
     try:
         file = session.get(download_url, stream=True)
